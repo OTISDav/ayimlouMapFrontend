@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.example.ayimoloumap_mobile"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "26.3.11579264"
+    ndkVersion = "27.0.12077973"
 
 
     compileOptions {
