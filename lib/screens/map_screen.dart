@@ -6,6 +6,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../models/vendor.dart';
 import '../services/api_service.dart';
 import 'vendor_detail_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class MapScreen extends StatefulWidget {
   @override
@@ -23,8 +24,7 @@ class _MapScreenState extends State<MapScreen> {
   final FlutterTts _flutterTts = FlutterTts();
   BitmapDescriptor? _vendorIcon;
 
-  final String _googleApiKey = 'AIzaSyCL3xPuxOlUMzh33k-z941HAn62HV_6qyE'; // ta clé API
-
+  final String _googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
   @override
   void initState() {
     super.initState();
@@ -32,18 +32,18 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _initialize() async {
-    await _loadCustomMarker();
+    // await _loadCustomMarker();
     await _determinePosition();
     await _loadVendors();
   }
 
   /// 🧩 Charger le pin personnalisé
-  Future<void> _loadCustomMarker() async {
-    _vendorIcon = await BitmapDescriptor.fromAssetImage(
-      const ImageConfiguration(size: Size(64, 64)),
-      'assets/icon/pin.png',
-    );
-  }
+  // Future<void> _loadCustomMarker() async {
+  //   _vendorIcon = await BitmapDescriptor.fromAssetImage(
+  //     const ImageConfiguration(size: Size(64, 64)),
+  //     'assets/icon/pin.png',
+  //   );
+  // }
 
   /// 📍 Récupérer la position de l’utilisateur
   Future<void> _determinePosition() async {

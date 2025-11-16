@@ -1,16 +1,40 @@
-# ayimoloumap_mobile
+# AyimolouMap Mobile
 
-A new Flutter project.
+## Installation
 
-## Getting Started
+1. Clonez le projet
+```bash
+git clone <votre-repo>
+cd ayimolouMapfront
+```
 
-This project is a starting point for a Flutter application.
+2. Créez le fichier `.env` à partir de l'exemple
+```bash
+cp .env.example .env
+```
 
-A few resources to get you started if this is your first Flutter project:
+3. Ajoutez vos clés API dans `.env`
+```env
+GOOGLE_MAPS_API_KEY=votre_cle_google_maps
+API_KEY=votre_cle_api
+BASE_URL=https://votre-api.com
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+4. Installez les dépendances
+```bash
+flutter pub get
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+5. Lancez l'application
+```bash
+flutter run
+```
+
+## Configuration Google Maps
+
+Pour obtenir une clé API Google Maps :
+1. Allez sur https://console.cloud.google.com/
+2. Créez un projet
+3. Activez "Maps SDK for Android"
+4. Créez une clé API
+5. Ajoutez-la dans votre fichier `.env`

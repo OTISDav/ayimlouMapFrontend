@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // 👈 ajoute cette ligne
 import './services/auth_service.dart';
 import './providers/user_provider.dart';
 import './screens/map_screen.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ Charger les variables d'environnement
+  await dotenv.load(fileName: ".env");
+
   final token = await AuthService.getToken();
   runApp(AyimolouApp(initialToken: token));
 }
@@ -33,7 +38,6 @@ class AyimolouApp extends StatelessWidget {
             backgroundColor: Colors.teal,
           ),
         ),
-        // ✅ Toujours aller sur la Map
         home: MapScreen(),
       ),
     );

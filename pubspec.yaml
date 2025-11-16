@@ -19,6 +19,7 @@ dependencies:
   http: ^1.1.0
   provider: ^6.1.5+1
   flutter_tts: ^3.8.3
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -38,4 +39,5 @@ flutter:
 
   assets:
     - assets/icon/icon.png
-    - assets/icon/pin.png
+    - .env  
+    # - assets/icon/pin.png
