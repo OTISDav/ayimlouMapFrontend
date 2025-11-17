@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -25,6 +26,11 @@ class _MapScreenState extends State<MapScreen> {
   BitmapDescriptor? _vendorIcon;
 
   final String _googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
+
+  Vendor? _selectedVendor;
+  bool _readyToNavigate = false;
+  StreamSubscription<Position>? _gpsStream;
+
   @override
   void initState() {
     super.initState();
@@ -32,18 +38,9 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _initialize() async {
-    // await _loadCustomMarker();
     await _determinePosition();
     await _loadVendors();
   }
-
-  /// 🧩 Charger le pin personnalisé
-  // Future<void> _loadCustomMarker() async {
-  //   _vendorIcon = await BitmapDescriptor.fromAssetImage(
-  //     const ImageConfiguration(size: Size(64, 64)),
-  //     'assets/icon/pin.png',
-  //   );
-  // }
 
   /// 📍 Récupérer la position de l’utilisateur
   Future<void> _determinePosition() async {
@@ -89,7 +86,9 @@ class _MapScreenState extends State<MapScreen> {
               onTap: () async {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => VendorDetailScreen(vendor: vendor)),
+                  MaterialPageRoute(
+                    builder: (_) => VendorDetailScreen(vendor: vendor),
+                  ),
                 );
 
                 if (result != null) {
@@ -97,7 +96,7 @@ class _MapScreenState extends State<MapScreen> {
                     _drawRouteTo(vendor);
                   } else if (result['action'] == 'start') {
                     await _drawRouteTo(vendor);
-                    _startNavigation(vendor);
+                    // Le bouton “Démarrer navigation” apparaît après le tracé
                   }
                 }
               },
@@ -141,7 +140,11 @@ class _MapScreenState extends State<MapScreen> {
         width: 6,
       );
 
-      setState(() => _polylines = {polyline});
+      setState(() {
+        _polylines = {polyline};
+        _selectedVendor = vendor;
+        _readyToNavigate = true; // Affiche le bouton navigation
+      });
 
       final bounds = _boundsFromList(routePoints);
       _mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
@@ -152,24 +155,45 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  /// 🚘 Démarrer la navigation interne
-  Future<void> _startNavigation(Vendor vendor) async {
-    if (_polylines.isEmpty) {
-      await _drawRouteTo(vendor);
-    }
-
-    final routePoints = _polylines.first.points;
+  /// 🚘 Démarrer la navigation GPS réelle
+  void _startNavigation() async {
+    if (_selectedVendor == null) return;
+    final vendor = _selectedVendor!;
     await _speak("Navigation vers ${vendor.name} démarrée.");
 
-    for (final point in routePoints) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      _mapController.animateCamera(CameraUpdate.newLatLng(point));
-    }
+    // Stopper ancien stream
+    _gpsStream?.cancel();
 
-    await _speak("Vous êtes arrivé à destination !");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("🚗 Arrivé à destination !")),
-    );
+    _gpsStream = Geolocator.getPositionStream(
+      locationSettings: LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 3,
+      ),
+    ).listen((Position position) async {
+      final userLatLng = LatLng(position.latitude, position.longitude);
+      _mapController.animateCamera(CameraUpdate.newLatLng(userLatLng));
+
+      double distanceToVendor = Geolocator.distanceBetween(
+        position.latitude,
+        position.longitude,
+        vendor.latitude,
+        vendor.longitude,
+      );
+
+      if (distanceToVendor > 50) {
+        await _speak("Continuez tout droit.");
+      } else if (distanceToVendor <= 50 && distanceToVendor > 10) {
+        await _speak("Vous êtes presque arrivé.");
+      } else if (distanceToVendor <= 10) {
+        await _speak("Vous êtes arrivé à destination.");
+        _gpsStream?.cancel();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("🚗 Arrivé à destination !")),
+        );
+      }
+    });
+
+    setState(() => _readyToNavigate = false);
   }
 
   /// 🔊 Synthèse vocale
@@ -206,7 +230,7 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: Colors.teal))
-          : SafeArea( // ✅ supprime l’espace vide du haut
+          : SafeArea(
               child: Stack(
                 children: [
                   GoogleMap(
@@ -267,6 +291,14 @@ class _MapScreenState extends State<MapScreen> {
                           icon: Icons.refresh,
                           onPressed: _loadVendors,
                         ),
+                        if (_readyToNavigate)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: _buildActionButton(
+                              icon: Icons.navigation,
+                              onPressed: _startNavigation,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -298,5 +330,11 @@ class _MapScreenState extends State<MapScreen> {
         onPressed: onPressed,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _gpsStream?.cancel();
+    super.dispose();
   }
 }
