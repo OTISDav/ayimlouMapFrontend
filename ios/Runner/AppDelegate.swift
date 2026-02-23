@@ -9,10 +9,8 @@ import GoogleMaps
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
 
-    // On va chercher la clé dans le fichier de config iOS
-    if let path = Bundle.main.path(forResource: "Info", ofType: "plist"),
-       let dict = NSDictionary(contentsOfFile: path),
-       let apiKey = dict["GOOGLE_MAPS_API_KEY"] as? String {
+    // On lit la clé que Codemagic a injecté dans le Info.plist via GMSApiKey
+    if let apiKey = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String {
         GMSServices.provideAPIKey(apiKey)
     }
 
