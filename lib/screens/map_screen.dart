@@ -37,7 +37,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   // ── State ─────────────────────────────────────────────────────────────────
   late GoogleMapController _mapController;
-  LatLng _initialCenter = const LatLng(6.170, 1.212);
+  LatLng _initialCenter = const LatLng(6.1319, 1.2228); // Lomé par défaut
   LatLng? _userLocation;
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
@@ -203,21 +203,53 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Future<void> _determinePosition() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
+      if (!serviceEnabled) {
+        // Appetize / simulateur — forcer Lomé
+        setState(() {
+          _userLocation = const LatLng(6.1319, 1.2228);
+          _initialCenter = _userLocation!;
+        });
+        return;
+      }
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
+        if (permission == LocationPermission.deniedForever ||
+            permission == LocationPermission.denied) {
+          setState(() {
+            _userLocation = const LatLng(6.1319, 1.2228);
+            _initialCenter = _userLocation!;
+          });
+          return;
+        }
       }
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
+      ).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => Position(
+          latitude: 6.1319,
+          longitude: 1.2228,
+          timestamp: DateTime.now(),
+          accuracy: 0,
+          altitude: 0,
+          altitudeAccuracy: 0,
+          heading: 0,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0,
+        ),
       );
       setState(() {
         _userLocation = LatLng(position.latitude, position.longitude);
         _initialCenter = _userLocation!;
       });
     } catch (e) {
-      debugPrint("Erreur de localisation : $e");
+      debugPrint("GPS indisponible : $e");
+      setState(() {
+        _userLocation = const LatLng(6.1319, 1.2228);
+        _initialCenter = _userLocation!;
+      });
     }
   }
 
@@ -527,7 +559,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             c.setMapStyle(ayimolouMapStyle);
           },
           myLocationEnabled: true,
-          myLocationButtonEnabled: false,
+          myLocationButtonEnabled: true,
           zoomControlsEnabled: false,
           markers: _markers,
           polylines: _polylines,
