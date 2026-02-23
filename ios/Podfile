@@ -1,23 +1,34 @@
-# 1. Cette ligne est INDISPENSABLE pour que le Podfile comprenne les commandes Flutter
-source 'https://github.com/CocoaPods/Specs.git'
-platform :ios, '14.0'
-
-# 2. On charge les instructions Flutter
-install! 'cocoapods', :deterministic_uuids => false
-
-# Importation du script Flutter (C'est ce qui manquait !)
+# 1. On définit le chemin vers le script de Flutter
 flutter_install_all_ios_pods = File.join(File.dirname(File.realpath(__FILE__)), '..', '.flutter-plugins-dependencies')
+
+# 2. On charge le script d'aide de Flutter
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get has been executed."
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig and regenerate it by running flutter pub get."
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+# 3. Configuration du projet
+platform :ios, '14.0'
 
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
 
-  # 3. La commande qui faisait planter le build
-  # Elle demande maintenant à Flutter d'installer tous les plugins
-  # (Pas besoin de paramètre ici avec les versions récentes)
+  # C'est cette ligne qui va chercher tes dépendances (Google Maps, etc.)
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
-# 4. Ce bloc force la version 14.0 pour éviter l'erreur Google Maps
+# 4. Correction forcée pour Google Maps (iOS 14.0)
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
