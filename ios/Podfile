@@ -1,15 +1,23 @@
-# Définition de la plateforme iOS 14.0 pour Google Maps
+# 1. Cette ligne est INDISPENSABLE pour que le Podfile comprenne les commandes Flutter
+source 'https://github.com/CocoaPods/Specs.git'
 platform :ios, '14.0'
 
-# Configuration standard Flutter
+# 2. On charge les instructions Flutter
+install! 'cocoapods', :deterministic_uuids => false
+
+# Importation du script Flutter (C'est ce qui manquait !)
+flutter_install_all_ios_pods = File.join(File.dirname(File.realpath(__FILE__)), '..', '.flutter-plugins-dependencies')
+
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
 
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  # 3. La commande qui faisait planter le build
+  # Elle demande maintenant à Flutter d'installer tous les plugins
+  # (Pas besoin de paramètre ici avec les versions récentes)
 end
 
-# Ce bloc force TOUS les plugins à utiliser la version 14.0
+# 4. Ce bloc force la version 14.0 pour éviter l'erreur Google Maps
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
